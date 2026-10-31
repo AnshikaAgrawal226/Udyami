@@ -2,7 +2,7 @@
 
 **Udyami helps small retailers manage their product catalogue and stock operations through a simple web interface and voice commands.**
 
-Shopkeepers can interact with Udyami using Hindi, English, or Hinglish. The platform connects a voice agent to backend operations so that supported actions can be validated before being saved.
+Shopkeepers can interact with Udyami using Hindi, English, or Hinglish. The platform connects a voice agent to backend operations so supported actions can be validated before being saved.
 
 ## The Problem
 
@@ -14,7 +14,7 @@ Udyami brings product catalogue management and voice-driven stock operations int
 
 A shopkeeper can use the web interface to manage products or start a voice session with the Udyami agent.
 
-**Voice workflow:**
+### How the Voice Workflow Works
 
 1. The shopkeeper starts a voice session.
 2. They give an instruction in Hindi, English, or Hinglish.
@@ -72,14 +72,14 @@ Udyami/
 - Node.js and npm
 - A Bolna account and configured Udyami voice agent for voice functionality
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/AnshikaAgrawal226/Udyami.git
 cd Udyami
 ```
 
-### 2. Configure backend environment variables
+### 2. Configure Backend Environment Variables
 
 Create a `.env` file inside the `backend` directory:
 
@@ -91,7 +91,7 @@ BOLNA_AGENT_ID=your_bolna_agent_id
 
 Replace the example values with your own credentials. Never commit the `.env` file or expose API keys in frontend code.
 
-### 3. Start the backend
+### 3. Start the Backend
 
 Open a terminal:
 
@@ -107,13 +107,13 @@ The backend runs at:
 http://localhost:3000
 ```
 
-You can check its health at:
+Check its health at:
 
 ```text
 http://localhost:3000/api/health
 ```
 
-### 4. Start the frontend
+### 4. Start the Frontend
 
 Open a second terminal from the project root:
 
@@ -131,7 +131,7 @@ http://localhost:5173
 
 Allow microphone access when prompted to use the voice interface.
 
-## Project Vision and Future Scope
+## Future Scope
 
 Planned development areas include:
 
