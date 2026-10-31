@@ -394,3 +394,29 @@ footer {
     width: 100%;
   }
 }
+
+.voice-panel {
+  background: #f0f7ff;
+  border: 1px solid #cfe3f8;
+  border-radius: 14px;
+  padding: 20px;
+  margin: 24px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.voice-panel h2 {
+  margin: 0 0 6px;
+}
+
+.voice-panel p {
+  margin: 5px 0;
+}
+
+.voice-status {
+  font-weight: 600;
+  text-transform: capitalize;
+}

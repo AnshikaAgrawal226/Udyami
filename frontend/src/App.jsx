@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { BolnaWebCall } from "@bolna/web-call";
 import "./App.css";
 
 const API_BASE = "http://localhost:3000/api";
@@ -27,12 +28,93 @@ function App() {
 
   const [screen, setScreen] = useState("catalogue");
 
+  // Voice call
+  const callRef = useRef(null);
+  const [voiceStatus, setVoiceStatus] = useState("idle");
+  const [voiceError, setVoiceError] = useState("");
+
   // Product form
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("");
   const [category, setCategory] = useState("");
 
   const [productAttributes, setProductAttributes] = useState({});
+
+  async function startVoiceCall() {
+    if (callRef.current && voiceStatus !== "ended") {
+      return;
+    }
+
+    setVoiceError("");
+    setVoiceStatus("connecting");
+
+    try {
+      const call = new BolnaWebCall({
+        sessionUrl: `${API_BASE}/bolna-session`,
+      });
+
+      callRef.current = call;
+
+      call.on("state-change", (nextState) => {
+        const state =
+          typeof nextState === "string"
+            ? nextState
+            : nextState?.state;
+
+        if (state) {
+          setVoiceStatus(state);
+        }
+      });
+
+      call.on("call-start", () => {
+        setVoiceStatus("active");
+      });
+
+      call.on("call-end", () => {
+        setVoiceStatus("ended");
+        callRef.current = null;
+      });
+
+      call.on("error", (event) => {
+        setVoiceError(
+          event?.message || "Voice connection failed. Please try again."
+        );
+      });
+
+      await call.start();
+    } catch (err) {
+      setVoiceStatus("ended");
+      setVoiceError(
+        err.message || "Could not start the voice call. Please try again."
+      );
+      callRef.current = null;
+    }
+  }
+
+  async function endVoiceCall() {
+    if (!callRef.current) {
+      setVoiceStatus("idle");
+      return;
+    }
+
+    try {
+      await callRef.current.stop();
+    } catch (err) {
+      setVoiceError("Could not end the call cleanly. Please try again.");
+    } finally {
+      callRef.current = null;
+      setVoiceStatus("idle");
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (callRef.current) {
+        callRef.current.stop().catch(console.error);
+        callRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     async function loadInitialData() {
@@ -243,6 +325,38 @@ function App() {
           <p className="subtitle">Your business, simply managed.</p>
         </div>
       </header>
+
+      <section className="voice-panel">
+        <div>
+          <h2>Talk to Udyami</h2>
+          <p>
+            Manage your business using Hindi, English, or Hinglish.
+          </p>
+          <p className="voice-status">
+            Status: {voiceStatus}
+          </p>
+        </div>
+
+        {voiceStatus === "idle" || voiceStatus === "ended" ? (
+          <button type="button" onClick={startVoiceCall}>
+            <span aria-hidden="true">🎙️</span> Start speaking
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={endVoiceCall}
+          >
+            End call
+          </button>
+        )}
+
+        {voiceError && (
+          <p className="error" role="alert">
+            {voiceError}
+          </p>
+        )}
+      </section>
 
       <nav className="screen-nav" aria-label="Main navigation">
         <button

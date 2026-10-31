@@ -1,12 +1,14 @@
-﻿import {
+﻿
+import {
   BUSINESS_TYPES,
   PRODUCT_FIELDS,
   STANDARD_PRODUCT_FIELDS
 } from "./config/catalogueOptions.js";
 
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { randomUUID } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import { JSONFilePreset } from "lowdb/node";
 
 const app = express();
@@ -34,6 +36,49 @@ if (!db.data.businessConfig) {
 app.use(cors());
 app.use(express.json());
 
+// Verify API key for protected endpoints
+
+const requireApiKey = (req, res, next) => {
+  console.log("API REQUEST:", req.method, req.originalUrl);
+  console.log(
+    "API KEY PRESENT:",
+    Boolean(req.get("x-api-key"))
+  );
+
+  const expectedKey = process.env.UDYAMI_API_KEY;
+  const providedKey = req.get("x-api-key");
+
+  // Ensure the server has an API key configured
+  if (!expectedKey) {
+    return res.status(500).json({
+      error: "Server authentication is not configured."
+    });
+  }
+
+  // Reject requests without an API key
+  if (typeof providedKey !== "string") {
+    return res.status(401).json({
+      error: "Unauthorized: API key is missing or invalid."
+    });
+  }
+
+  const expectedBuffer = Buffer.from(expectedKey, "utf8");
+  const providedBuffer = Buffer.from(providedKey, "utf8");
+
+  // Compare keys safely
+  if (
+    expectedBuffer.length !== providedBuffer.length ||
+    !timingSafeEqual(expectedBuffer, providedBuffer)
+  ) {
+    return res.status(401).json({
+      error: "Unauthorized: API key is missing or invalid."
+    });
+  }
+
+  next();
+};
+
+// Health check
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
@@ -42,17 +87,17 @@ app.get("/api/health", (req, res) => {
 });
 
 // Retrieve the product catalogue
-app.get("/api/products", (req, res) => {
+app.get("/api/products", requireApiKey, (req, res) => {
   res.json(db.data.products);
 });
 
 // Retrieve the business configuration
-app.get("/api/business-config", (req, res) => {
+app.get("/api/business-config", requireApiKey, (req, res) => {
   res.json(db.data.businessConfig);
 });
 
-// Return the business types and product fields Udyami supports
-app.get("/api/catalogue-options", (req, res) => {
+// Retrieve supported business types and product fields
+app.get("/api/catalogue-options", requireApiKey, (req, res) => {
   res.json({
     businessTypes: BUSINESS_TYPES,
     standardProductFields: STANDARD_PRODUCT_FIELDS,
@@ -69,7 +114,7 @@ const isUniqueList = (values) => {
 };
 
 // Update the business configuration
-app.put("/api/business-config", async (req, res) => {
+app.put("/api/business-config",requireApiKey, async (req, res) => {
   const {
     businessType,
     customBusinessType = "",
@@ -168,7 +213,7 @@ app.put("/api/business-config", async (req, res) => {
 });
 
 
-app.post("/api/products", async (req, res) => {
+app.post("/api/products",requireApiKey, async (req, res) => {
   const {
     name,
     unit,
@@ -291,6 +336,123 @@ app.post("/api/products", async (req, res) => {
   return res.status(201).json(product);
 });
 
+
+// Add stock to an existing product
+app.post("/api/stock/add", requireApiKey, async (req, res) => {
+  console.log("ADD STOCK REQUEST:", JSON.stringify(req.body, null, 2));
+  const { productId, quantity, confirmed } = req.body ?? {};
+
+  // Require explicit confirmation from the voice interaction
+  const isConfirmed =
+    confirmed === true ||
+    (typeof confirmed === "string" &&
+      confirmed.trim().toLowerCase() === "true");
+
+  if (!isConfirmed) {
+    return res.status(400).json({
+      error: "Stock update requires user confirmation."
+    });
+  }
+
+  if (typeof productId !== "string" || !productId.trim()) {
+    return res.status(400).json({
+      error: "A valid product ID is required."
+    });
+  }
+
+  const amount = Number(quantity);
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return res.status(400).json({
+      error: "Quantity must be a positive number."
+    });
+  }
+
+  const product = db.data.products.find(
+    (item) => item.id === productId
+  );
+
+  if (!product || product.active === false) {
+    return res.status(404).json({
+      error: "Product not found or inactive."
+    });
+  }
+
+  let result;
+
+  await db.update((data) => {
+    const currentProduct = data.products.find(
+      (item) => item.id === productId
+    );
+
+    if (!currentProduct || currentProduct.active === false) {
+      return;
+    }
+
+    const currentStock = Number(currentProduct.stock ?? 0);
+
+    if (!Number.isFinite(currentStock) || currentStock < 0) {
+      return;
+    }
+
+    currentProduct.stock = currentStock + amount;
+
+    const transaction = {
+      id: randomUUID(),
+      type: "stock_add",
+      productId: currentProduct.id,
+      productName: currentProduct.name,
+      quantity: amount,
+      unit: currentProduct.unit,
+      stockAfter: currentProduct.stock,
+      createdAt: new Date().toISOString()
+    };
+
+    data.transactions.push(transaction);
+
+    result = {
+      product: currentProduct,
+      transaction
+    };
+  });
+
+  if (!result) {
+    return res.status(400).json({
+      error: "Stock could not be updated. Please check the product's current stock."
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Stock updated successfully.",
+    product: result.product,
+    transaction: result.transaction
+  });
+});
+
+app.post("/api/bolna-session", async (req, res) => {
+  try {
+    const response = await fetch(
+      "https://api.bolna.ai/web-call/freeswitch-session",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.BOLNA_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          agent_id: process.env.BOLNA_AGENT_ID,
+        }),
+      }
+    );
+
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error("Bolna session error:", error);
+    res.status(500).json({ error: "Could not create voice session." });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Udyami backend running at http://localhost:${PORT}`);
