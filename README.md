@@ -1,35 +1,38 @@
-# Udyami
+# Udyami — Voice-Enabled Business Platform
 
-### Voice-Enabled Business Platform
+**Udyami helps small retailers manage their product catalogue and stock operations through a simple web interface and voice commands.**
 
-Udyami is a configurable business management platform designed to help small retailers manage their product catalogue and business operations through a simple, accessible interface.
-
-The long-term vision is to let shopkeepers use natural voice commands in Hindi, English, and Hinglish to manage everyday business activities, with the system interpreting commands, presenting the proposed action for confirmation, and validating transactions before saving them.
+Shopkeepers can interact with Udyami using Hindi, English, or Hinglish. The platform connects a voice agent to backend operations so that supported actions can be validated before being saved.
 
 ## The Problem
 
-Small retailers often manage product information and daily operations manually or across disconnected tools. This can make it difficult to maintain an organised catalogue, track business information, and manage operations efficiently.
+Small retailers often maintain product information and stock records manually or across disconnected tools. This makes routine operations time-consuming and increases the possibility of inconsistent records.
 
 ## Our Solution
 
-Udyami aims to bring essential business operations into one configurable platform.
+Udyami brings product catalogue management and voice-driven stock operations into one configurable platform.
 
-The current prototype focuses on:
+A shopkeeper can use the web interface to manage products or start a voice session with the Udyami agent.
 
-- Business-specific setup and configuration.
-- A dynamic product catalogue.
-- Configurable product attributes.
-- Product creation and storage.
-- A foundation for future voice-driven business operations.
+**Voice workflow:**
 
-## Current Features
+1. The shopkeeper starts a voice session.
+2. They give an instruction in Hindi, English, or Hinglish.
+3. The voice agent identifies the requested operation and relevant product.
+4. The agent asks for clarification or confirmation when required.
+5. The backend validates the request and processes the supported operation.
+6. The agent communicates the result returned by the backend.
 
-- **Business configuration:** Select a business category such as grocery, clothing, or electronics, or specify another business type.
-- **Dynamic product fields:** Enable relevant product attributes such as brand, size, colour, pack size, flavour, and model.
+## Implemented Features
+
+- **Business configuration:** Choose a business category or specify another business type.
+- **Dynamic product fields:** Configure relevant product attributes such as brand and pack size.
 - **Custom attributes:** Add business-specific product fields.
-- **Product catalogue:** Create and display products with their configured attributes.
-- **Duplicate validation:** Distinguish products using their configured attributes rather than relying on product names alone.
-- **Persistent storage:** Store business configuration and product data using a local JSON database.
+- **Product catalogue:** Add and view products with their configured attributes.
+- **Product identification:** Use configured attributes to distinguish products with similar names.
+- **Voice interface:** Start and end an in-app voice session connected to the Udyami Bolna agent.
+- **Voice-driven stock addition:** Process supported stock additions through the voice workflow, subject to confirmation and backend validation.
+- **Persistent storage:** Store business configuration, product information, and stock transaction records using Lowdb.
 
 ## Technology Stack
 
@@ -38,18 +41,18 @@ The current prototype focuses on:
 | Frontend | React, Vite |
 | Backend | Node.js, Express.js |
 | Database | Lowdb |
+| Voice integration | Bolna Web Call SDK |
 | Communication | REST API |
 
 ## Project Structure
 
 ```text
-voice-business-assistant/
+Udyami/
 ├── backend/
 │   ├── config/
 │   │   └── catalogueOptions.js
 │   ├── server.js
 │   └── package.json
-│
 ├── frontend/
 │   ├── public/
 │   ├── src/
@@ -58,7 +61,6 @@ voice-business-assistant/
 │   │   ├── index.css
 │   │   └── main.jsx
 │   └── package.json
-│
 ├── .gitignore
 └── README.md
 ```
@@ -67,19 +69,29 @@ voice-business-assistant/
 
 ### Prerequisites
 
-- Node.js
-- npm
+- Node.js and npm
+- A Bolna account and configured Udyami voice agent for voice functionality
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/AnshikaAgrawal226/Udyami
-cd voice-business-assistant
+git clone https://github.com/AnshikaAgrawal226/Udyami.git
+cd Udyami
 ```
 
-Replace `YOUR_GITHUB_REPOSITORY_URL` with the repository's actual clone URL.
+### 2. Configure backend environment variables
 
-### 2. Start the backend
+Create a `.env` file inside the `backend` directory:
+
+```env
+UDYAMI_API_KEY=your_udyami_api_key
+BOLNA_API_KEY=your_bolna_api_key
+BOLNA_AGENT_ID=your_bolna_agent_id
+```
+
+Replace the example values with your own credentials. Never commit the `.env` file or expose API keys in frontend code.
+
+### 3. Start the backend
 
 Open a terminal:
 
@@ -95,9 +107,15 @@ The backend runs at:
 http://localhost:3000
 ```
 
-### 3. Start the frontend
+You can check its health at:
 
-Open another terminal from the project root:
+```text
+http://localhost:3000/api/health
+```
+
+### 4. Start the frontend
+
+Open a second terminal from the project root:
 
 ```bash
 cd frontend
@@ -111,25 +129,26 @@ Open the local URL displayed by Vite, usually:
 http://localhost:5173
 ```
 
+Allow microphone access when prompted to use the voice interface.
+
 ## Project Vision and Future Scope
 
-The next development phases aim to introduce:
+Planned development areas include:
 
-- Voice-based interaction using Bolna.
-- Hindi, English, and Hinglish command support.
-- Natural-language interpretation of business instructions.
-- Confirmation and correction before important operations.
-- Backend validation before committing transactions.
-- Inventory, sales, purchases, and customer credit management.
-- Supplier discrepancy resolution and reorder assistance.
+- Voice-driven sales and purchase recording.
+- Customer credit and ledger management.
+- Supplier discrepancy resolution.
+- Reorder assistance and inventory insights.
+- Support for additional Indian languages.
+- Expansion to more small-business categories.
 
-## Development Philosophy
+These are planned extensions and are not represented as completed features in the current prototype.
 
-Udyami is being designed around three principles:
+## Development Principles
 
-1. **Configurability:** Every business should be able to define its own catalogue and relevant product attributes.
-2. **Accessibility:** Business operations should become easier through natural-language and voice-based interaction.
-3. **Reliability:** Important business changes should be validated and confirmed before they are committed.
+1. **Configurability:** Businesses should be able to maintain product fields relevant to their operations.
+2. **Accessibility:** Voice interaction should make routine business operations easier.
+3. **Reliability:** Important business changes should be validated, with confirmation where required.
 
 ---
 
